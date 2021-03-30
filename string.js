@@ -1,61 +1,3 @@
-"use strict";
-    var wordRegisters = ['AX', 'BX', 'CX', 'DX', 'CS', 'DS', 'ES', 'SS', 'DI', 'SI', 'SP', 'BP', 'IP']; 
-    var byteRegisters = ['AH', 'AL', 'BH', 'BL', 'CH', 'CL', 'DL', 'DH'];
-    var segmentRegisters = ['CS', 'DS', 'ES', 'SS'];
- //get operands and its types exp: ["ax",'[1254+bx]',''Rx","M"] or ["al",0x12FF,''RL","I"]]
-function getOps(str){
-    
-  let operands=[];
-    let str2=str.replace(/\w+(?=\s)/,"").replace(/\s/g,"");
-    operands=(/,/.test(str2))?str2.split(','):str2.split();
-    if (operands[0]!=""){
-      let i=0;
-      let opsnumber=operands.length;
-      for(i; i<opsnumber;i++){
-        if (/\[.*\]/.test(operands[i])) {operands.push('M')}
-        else if (segmentRegisters.includes(operands[i].toUpperCase())){operands.push('RS')}
-        else if (wordRegisters.includes(operands[i].toUpperCase())) { operands.push('RX')}
-        else if (byteRegisters.includes(operands[i].toUpperCase())){operands.push('RL')}
-        else (operands.push('I'))
-        }
-      }
-      return operands
-    }
-
-function encodeMov(opcode, D, W) {
-
-    let decoded = opcode; 
-    decoded = decoded << 2; 
-
-    decoded = decoded + (D << 1) + W;
-    
-    
-    return decoded;
-
-}
-function getNum(str)//turn a string number BETWEEN BRACKETS to number
-{
-    var x=str.match(/(?<=(\s|\+|\[))(0x\w+|\d+|0b\d+)(?=(\s|\+|\]))/gi);
-    if (x==null) {return 0}
-    return convert(x[0]);
-}
-
-function splitNum(num){
-    var disp=[];
-      if(num>255)
-     {
-         disp.push(num & 0b0000000011111111);
-         num>>=8;
-       disp.push(num );
-     }
-     else{
-         disp.push(num);
-     }
-     console.log("from split");
-     console.log(disp);
-     return disp;
-}
-
 function toBcode(str) // original function to be class later 
 {
 var arr=[];
@@ -71,9 +13,9 @@ switch(instruction[0].toUpperCase())
     // Register/Memory to/from Register
     if (/R|M/.test(operands[2])  && /R|M/.test(operands[3])) {
 
-        let opcode = 0b100010,
-            w = getW(operands),
-            mode = getMod(operands),
+        let opcode = 0b100010;
+            w = getW(operands);
+            mode = getMod(operands);
             result = 0;
             
 
@@ -95,21 +37,47 @@ switch(instruction[0].toUpperCase())
             arr.push(result);
 
         }            
-    let disp=splitNum(getNum(str));
-    console.log("from disp  " + disp ) 
-    if (!disp==[] || disp!=0 || disp.length ==2){
-        console.log(disp);
-        arr=arr.concat(disp);
-    } 
-
+     // Immediate to Register/Memory
+    } else if(/M|R/.test(operands[2])  && /I/.test(operands[3])) 
+    {
+        w=getW(operands);
+        arr.push(encodeMov(opcode, 1, w));
+        arr.push((mode<<6)+regMem(operands));
+        if(w===1){
+            let byte=splitNum(operands[1]);
+            arr.push(byte[0]);
+            arr.push(byte[1]);
+           }
+           else{
+               arr.push(operands[1]);
+           }
     }
-    console.log(arr);
-    // Immediate to Register/Memory
-
-    
+    //segemnt register to memory/register
+    else if(/M|R/.test(operands[2])  && /RS/.test(operands[3]))
+    {
+        arr.push(0b10001100);
+        arr.push((mode<<6)+(regToId(operands[0])<<3)+regMem(operands));
+    }
+    // memory/register to segment register
+    else if(/RS/.test(operands[2])  && /R|M/.test(operands[3]))
+    {
+        arr.push(0b10001110);
+        arr.push((mode<<6)+(regToId(operands[0])<<3)+regMem(operands));
+    }
+  
     break;
 
   case "PUSH":
+      if(/RS/.test(operands[1]))
+      {
+          arr.push(0b01010000+regMem(operands));
+      }
+      else if(/R|M/.test(operands[1]))
+      {
+          arr.push(0b11111111);
+          arr.push(((getMod(operands))<<6)+0b110000+regMem(operands));
+      }
+
    break;
   case "POP" :
    break;
@@ -271,220 +239,3 @@ switch(instruction[0].toUpperCase())
 
     console.log(arr);
 }
-
-function getD(operands) {
-
-    // from reg to memory 
-    if (operands[0].includes("[") && (byteRegisters.includes(operands[1]) || wordRegisters.includes(operands[1])))
-
-        return 0; 
-    
-    // memory to reg 
-    else if (operands[1].includes("[") && (byteRegisters.includes(operands[0]) || wordRegisters.includes(operands[0]))) 
-        
-        return 1; 
-
-    
-    // other modes like immediate to memory 
-    return -1 ;
-
-
-}
-
-function getW(operands) {
-
-    // register to memory
-    if (getD(operands) == 0) {
-        
-        // word instruction
-        if (wordRegisters.includes(operands[1])) 
-
-            return 1; 
-
-        // byte instruction
-        else if (byteRegisters.includes(operands[1])) 
-
-            return 0; 
-
-        //just for debugging
-        return -1; 
-    }
-
-    // memory to register 
-    if (getD(operands) == 1) {
-
-        if (wordRegisters.includes(operands[0])) 
-
-            return 1;
-
-        else if (byteRegisters.includes(operands[0]))
-
-            return 0; 
-
-        return -1;
-
-    }
-
-    // register to register
-    if (getD(operands) == -1) {
-
-        if (wordRegisters.includes(operands[0]) && wordRegisters.includes(operands[1]))
-
-            return 1;
-
-        else if (byteRegisters.includes(operands[0]) && byteRegisters.includes(operands[1]))
-
-            return 0;
-
-    }
-
-    var imOperand = convert(operands[1]);
-
-    // immediate to memory
-    if (operands[0].includes("[") && getD(operands) == -1) {
-
-        // word instruction
-        if (imOperand > 255 || operands[0].includes("W"))  
-            return 1; 
-        
-        // byte instruction
-        return 0;
-    }
-
-    // immediate to register
-    if (imOperand > 255) 
-
-        return 1;
-
-    else if (imOperand <= 255)
-        
-        return 0;
-
-    else 
-        
-        return -1;
-}
-
-// ------------------------------- function define the zone (r/m) in op codes
-
-function regMem(ops){
-    if (getMod(ops)==3){
-        return regToId(ops[1]);}
-    else{
-    let i;
-    (/\[/.test(ops[0]))?i=0:/\[/.test(ops[1])?i=1:i=-1;
-     if (/(bx|si)+.*(bx|si)/i.test(ops[i])){return 0 }
-     else if (/(bx|di)+.*(bx|di)/i.test(ops[i])){return 1 }
-     else if (/(bp|si)+.*(bp|si)/i.test(ops[i])){return 2 }
-     else if (/(bp|di)+.*(bp|di)/i.test(ops[i])){return 3 }
-     else if (/si/i.test(ops[i])){return 4 }
-     else if (/di/i.test(ops[i])){return 5 }
-     else if (/bp/i.test(ops[i])){return 6 }
-     else if (/bx/i.test(ops[i])){return 7 }
-    }
-    }
-//---------------------------------------------get mod of instruction ------------------------------------------------------    
-
-function getMod(arr){
-    if( arr[0]!=""){
-                var num=0;
-                if(arr.length===2){     //if there's one operand
-                if(/R/.test(arr[1]))//if it's a register
-                    {
-                        return 0b11;
-                    }
-                else if(arr[1]==="M")
-                    {
-                      if(!/\d/.test(arr[0]))
-                      {
-                        return 0;
-                      }else{
-                     num=getNum(arr[0])
-                            if(num===0){return 0;}
-                            else if(num>255){return 0b10;}
-                            else{return 1;}}
-                }}
-                else{
-                    if(/R/.test(arr[2]) && /R/.test(arr[3]) )
-                    {return 0b11;}
-                    else  {
-                        var z=(arr[2]==="M")?0:1;
-                         if(!/\d/.test(arr[z]))
-                      {
-                        return 0;
-                      }else{
-                        num=getNum(arr[z])
-                                if( num===0){ return 0; }
-                                else if(num>255){ return 0b10; }
-                                else{ return 1; }}
-                                       
-                    }
-                }
-    }
-    }
-function convert(str)
-{
-  if(/^0x|0[A-D]h|\w+h$/i.test(str))
-  {
-      var str2=str.replace(/^0x|h$/i,"").toUpperCase();
-      return parseInt(str2,16);
-  }
-  else if(/^0b/i.test(str))
-  {
-    var str2=str.replace(/^0b/i,"");
-      return parseInt(str2,2);
-  }
-  else if(/^0o/i.test(str))
-  {
-    var str2=str.replace(/^0o/i,"").toUpperCase();
-      return parseInt(str2,8);
-  }
-  else{
-      return parseInt(str,10)
-  }     
-}
-// -----------function return register id by passing it name as a parameter----------------------
-
-function regToId(regname){
-    switch(regname.toLowerCase()){
-        case 'al':
-        case 'ax':
-        case 'es':
-            return 0;
-            break;
-        case 'cl':
-        case 'cx':
-        case 'cs':
-            return 1;
-            break;
-        case 'dl':
-        case 'dx':
-        case 'ss':
-        
-            return 2;
-            break;
-        case 'bl':
-        case 'bx':
-        case 'ds':
-            return 3;
-            break;
-        case 'sp':
-        case 'ah':
-            return 4;
-            break;
-        case 'bp':
-        case 'ch':
-            return 5;
-            break;
-        case 'si':
-        case 'dh':
-            return 6;
-            break;
-           case 'di':
-        case 'bh':
-            return 7;
-            break;
-    }
-}
-
-console.log(toBcode("MOV [BX+3], CX"));
