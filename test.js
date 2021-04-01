@@ -179,7 +179,7 @@ switch(instruction[0].toUpperCase())
               if (byte.length===1) {
               /\-/.test(operands[1])?byte.push(255):byte.push(0);
               }
-              arr.push(byte[1]);
+                arr.push(byte[1]);
              }
              else {
                  arr.push(convert(operands[1]));
@@ -251,14 +251,15 @@ case "ADD":
   else if (/M|R/.test(operands[2]) && /I/.test(operands[3])) {
 
       opcode = 0b100000;
-      let s=(/\-/.test((/I/.test(operands[2]))?operands[0]:operands[1]))?1:0;
+      let s=(convert((/I/.test(operands[2]))?operands[0]:operands[1]))<128?1:0;
+      console.log('s test  '+s);
       arr.push((opcode<<2)+(s<<1)+w);
       arr.push((mode<<6)+regmem);
       arr=byteConcat(str,arr);
-      if(w===1){
+      if(w===1){         
           let byte=splitNum(convert(operands[1]));
           arr.push(byte[0]);
-          if (byte.length===1 ) {
+          if (byte.length===1 && (/W\.|WORD/.test(operands[0]))) {
             /\-/.test(operands[1])?byte.push(255):byte.push(0);
             }
           if (byte.length===2) {
@@ -912,12 +913,8 @@ else {
 function regMem(ops){
   justNumbers=false;
   if (getMod(ops)==3){
-     if  (ops.length===2) {
-         return regToId(ops[0]);
-     }
-     else {
-         return  /R/.test(ops[2])?regToId(ops[0]): regToId(ops[1])   ;  
-     }}
+      return (ops.length===2) ?regToId(ops[0]):regToId(ops[1]);     
+}
   else{
   let i;
   (/\[/.test(ops[0]))?i=0:/\[/.test(ops[1])?i=1:i=-1;
@@ -1042,8 +1039,12 @@ switch(regname.toLowerCase()){
 }
 return arr;
 }
-console.log(toBcode("add w.[si+12],152"));
-console.log(toBcode("add [si+12],bx"));
+console.log(toBcode("mov [si+12],15"));
+console.log(toBcode("mov w.[si+12],15"));
+console.log(toBcode("add [si+12],15"));
+console.log("xx" +toBcode("add w.[si+12],15"));
+//console.log(toBcode("sub ax,bx"));
+console.log(toBcode("add ax,16"));
 
 
 //console.log(getNum("mov [bp-455],es"));
