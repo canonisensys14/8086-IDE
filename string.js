@@ -3,16 +3,29 @@
   var byteRegisters = ['AH', 'AL', 'BH', 'BL', 'CH', 'CL', 'DL', 'DH'];
   var segmentRegisters = ['CS', 'DS', 'ES', 'SS'];
   var justNumbers=false;
+  function segSepcification(operands,arr){
+    let x=0;
+    if  (operands.length===4){
+     /M/.test(operands[2])?x=0:(/M/.test(operands[3]))?x=1:x=-1;
+    }else  /M/.test(operands[1])?x=0:x=-1;
+    if (x!=-1 && /S\s*:/.test(operands[x])){
+      let y= operands[x][0]+operands[x][1];
+      console.log(y);
+      return arr.unshift(0b100110+(regToId(y)<<3)+6)     
+    }
+    else return arr;
+}
 //get operands and its types exp: ["ax",'[1254+bx]',''Rx","M"] or ["al",0x12FF,''RL","I"]]
 function byteConcat(str,arr) {   
     let disp=splitNum(getNum(str)); 
+    arr.concat(findBP(getOps(str),arr));
     if (disp!=0){
       return arr.concat(disp);
     }else return arr;
 }
 function getOps(str){  
 let operands=[];
-  let str2=str.replace(/\w+(?=\s)/,"").replace(/\s/g,"");
+  let str2=str.replace(/\w+(?=\s)/,"");str2=str2.replace(/\s/g,"");
   operands=(/,/.test(str2))?str2.split(','):str2.split();
   if (operands[0]!=""){
     let i=0;
@@ -26,6 +39,25 @@ let operands=[];
       }
     }
     return operands.map(x=>(x.toUpperCase()));
+  }
+  function findBP(operands,arr)
+  {
+     if(operands.length===4)
+     {
+         let z=/M/.test(operands[2])?0:(/M/.test(operands[3])?1:-1);
+         if(z!==-1)
+         {
+             if(/\[BP\]/i.test(operands[z]))
+             {
+                 arr.push(0);
+             }
+         }
+     }
+     else if(/\[BP\]/i.test(operands[0]))
+     {
+         arr.push(0);
+     }
+     return arr;
   }
 
 function encodeMov(opcode, D, W) {
@@ -64,8 +96,9 @@ function toBcode(str) // original function to be class later
 var arr=[];
 
 let regex=/(?<=\s*)\S+/;
-var operands = getOps(str);
 let instruction = str.match(regex);
+var operands = getOps(str);
+
 var w = getW(operands),
 v=getV(operands),
 opcode=0,
@@ -941,4 +974,4 @@ function regToId(regname){
   }
   return arr;
 }
-console.log(toBcode());
+console.log(toBcode("mov [bp],bx"));
