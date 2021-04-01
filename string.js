@@ -1,20 +1,16 @@
-
   "use strict";
   var wordRegisters = ['AX', 'BX', 'CX', 'DX', 'CS', 'DS', 'ES', 'SS', 'DI', 'SI', 'SP', 'BP', 'IP']; 
   var byteRegisters = ['AH', 'AL', 'BH', 'BL', 'CH', 'CL', 'DL', 'DH'];
   var segmentRegisters = ['CS', 'DS', 'ES', 'SS'];
   var justNumbers=false;
 //get operands and its types exp: ["ax",'[1254+bx]',''Rx","M"] or ["al",0x12FF,''RL","I"]]
-function byteConcat(str,arr) {
-
-    
+function byteConcat(str,arr) {   
     let disp=splitNum(getNum(str)); 
     if (disp!=0){
       return arr.concat(disp);
     }else return arr;
 }
-function getOps(str){
-  
+function getOps(str){  
 let operands=[];
   let str2=str.replace(/\w+(?=\s)/,"").replace(/\s/g,"");
   operands=(/,/.test(str2))?str2.split(','):str2.split();
@@ -227,12 +223,9 @@ case "POP" :
         arr.push((0b10000) +(d<<1)+w); 
         arr.push((mode << 6) +regToId((/R/.test(operands[2]))?operands[0]:operands[1])<<3+ regmem);
             arr=byteConcat(str,arr);
-        
-
 }
 //Immediate to Register/Memory 
 else if (/I|M/.test(operands[2]) && /I|M/.test(operands[3])) {
-
     opcode = 0b100000;
     let s=(/\-/.test((/I/.test(operands[2]))?operands[0]:operands[1]))?1:0;
     arr.push((opcode<<2)+(s<<1)+w);
@@ -255,14 +248,14 @@ else if (/I|M/.test(operands[2]) && /I|M/.test(operands[3])) {
   case "SUB": 
     //Reg./Memory with Register to Either
     if (/R|M/.test(operands[2]) &&  /M|R/.test(operands[3])) {
-          arr.push( ( 0b01010<< 2) + (getD(operands)<<1)+w); 
+          arr.push( ( 0b01010<< 2) + (d<<1)+w); 
           arr.push((mode << 6) +regToId((/R/.test(operands[2]))?operands[0]:operands[1])<<3+ regmem);
               arr=byteConcat(str,arr);
   }
   //Immediate to Register/Memory 
   else if (/I|M/.test(operands[2]) && /I|M/.test(operands[3])) {
       opcode = 0b100000;
-      let s=(convert((/I/.test(operands[2]))?operands[0]:operands[1])<0)?1:0;
+      let s=(/\-/.test((/I/.test(operands[2]))?operands[0]:operands[1]))?1:0;
       arr.push((opcode<<2)+(s<<1)+w);
       arr.push((mode<<6)+regmem);
       arr=byteConcat(str,arr);
@@ -283,7 +276,7 @@ else if (/I|M/.test(operands[2]) && /I|M/.test(operands[3])) {
 //Immediate to Register/Memory 
 else if (/I|M/.test(operands[2]) && /I|M/.test(operands[3])) {
 opcode = 0b100000;
-let s=(convert((/I/.test(operands[2]))?operands[0]:operands[1])<0)?1:0;
+let s=(/\-/.test((/I/.test(operands[2]))?operands[0]:operands[1]))?1:0;
 arr.push((opcode<<2)+(s<<1)+w);
 arr.push((mode<<6)+regmem);
 arr=byteConcat(str,arr);
@@ -301,14 +294,14 @@ if(w===1)
   case "CMP":
         //Reg./Memory with Register to Either
     if (/R|M/.test(operands[2]) &&  /M|R/.test(operands[3])) {
-        arr.push( ( 0b01110<< 2) + (getD(operands)<<1)+w); 
+        arr.push( ( 0b01110<< 2) + (d<<1)+w); 
         arr.push((mode << 6) +regToId((/R/.test(operands[2]))?operands[0]:operands[1])<<2+ regmem);
             arr=byteConcat(str,arr);
 }
 //Immediate to Register/Memory 
 else if (/I|M/.test(operands[2]) && /I|M/.test(operands[3])) {
     opcode = 0b100000;
-    let s=(convert((/I/.test(operands[2]))?operands[0]:operands[1])<0)?1:0;
+    let s=(/\-/.test((/I/.test(operands[2]))?operands[0]:operands[1]))?1:0;
     arr.push((opcode<<2)+(s<<1)+w);
     arr.push((mode<<6)+regmem);
     arr=byteConcat(str,arr);
@@ -452,7 +445,7 @@ else if (/I|M/.test(operands[2]) && /I|M/.test(operands[3])) {
   case "AND" :
           //Reg./Memory with Register to Either
       if (/R|M/.test(operands[2]) &&  /M|R/.test(operands[3])) {
-          arr.push( ( 0b01000<< 2) + (getD(operands)<<1)+w); 
+          arr.push( ( 0b01000<< 2) + (d<<1)+w); 
           arr.push((mode << 6) +regToId((/R/.test(operands[2]))?operands[0]:operands[1])<<2+ regmem);
               arr=byteConcat(str,arr);
   }
@@ -472,7 +465,7 @@ else if (/I|M/.test(operands[2]) && /I|M/.test(operands[3])) {
   case "XOR" :
        //Reg./Memory with Register to Either
        if (/R|M/.test(operands[2]) &&  /M|R/.test(operands[3])) {
-        arr.push( ( 0b0110000) + (getD(operands)<<1)+w); 
+        arr.push( ( 0b0110000) + (d<<1)+w); 
         arr.push((mode << 6) +regToId((/R/.test(operands[2]))?operands[0]:operands[1])<<2+ regmem);
             arr=byteConcat(str,arr);
 }
@@ -493,7 +486,7 @@ else if (/I|M/.test(operands[2]) && /I|M/.test(operands[3])) {
   case "OR" :
        //Reg./Memory with Register to Either
        if (/R|M/.test(operands[2]) &&  /M|R/.test(operands[3])) {
-        arr.push( ( 0b010<< 2) + (getD(operands)<<1)+w); 
+        arr.push( ( 0b010<< 2) + (d<<1)+w); 
         arr.push((mode << 6) +regToId((/R/.test(operands[2]))?operands[0]:operands[1])<<2+ regmem);
             arr=byteConcat(str,arr);
 }
@@ -776,16 +769,12 @@ else if (/I|M/.test(operands[2]) && /I|M/.test(operands[3])) {
   return arr;
 }
 //get value of d
-function getD(operands) {
-
+function getD(operands) {  
     // from reg to memory 
-    if (/M/.test(operands[0]) && /R/.test(operands[1]))
-  
-        return 0; 
-    
+    if (/M/.test(operands[2]) && /R/.test(operands[3])) 
+        return 0;    
     // memory to reg 
-    else if (/M/.test(operands[1]) && /R/.test(operands[1]) ) 
-        
+    else if ( /R/.test(operands[2]) )        
         return 1; 
   }
 //get value of w
@@ -819,60 +808,66 @@ else {
 
 function regMem(ops){
     justNumbers=false;
-  if (getMod(ops)==3){
-      return (ops.length==4)?regToId(ops[1]):regToId(ops[0])}
-  else{
-  let i;
-  (/\[/.test(ops[0]))?i=0:/\[/.test(ops[1])?i=1:i=-1;
-   if (/(bx|si)+.*(bx|si)/i.test(ops[i])){return 0 }
-   else if (/(bx|di)+.*(bx|di)/i.test(ops[i])){return 1 }
-   else if (/(bp|si)+.*(bp|si)/i.test(ops[i])){return 2 }
-   else if (/(bp|di)+.*(bp|di)/i.test(ops[i])){return 3 }
-   else if (/si/i.test(ops[i])){return 4 }
-   else if (/di/i.test(ops[i])){return 5 }
-   else if (/bp/i.test(ops[i])){return 6 }
-   else if (/bx/i.test(ops[i])){return 7 }
-   else{justNumbers=true;return 0b110;}
+    if (getMod(ops)==3){
+        if (ops.length===2) {
+  
+            return regToId(ops[0])
+        }
+        else {
+            return /R/.test(ops[2])? regToId(ops[0]):regToId(ops[1]);
+      }
   }
+    else{
+    let i;
+    (/\[/.test(ops[0]))?i=0:/\[/.test(ops[1])?i=1:i=-1;
+     if (/(bx|si)+.*(bx|si)/i.test(ops[i])){return 0 }
+     else if (/(bx|di)+.*(bx|di)/i.test(ops[i])){return 1 }
+     else if (/(bp|si)+.*(bp|si)/i.test(ops[i])){return 2 }
+     else if (/(bp|di)+.*(bp|di)/i.test(ops[i])){return 3 }
+     else if (/si/i.test(ops[i])){return 4 }
+     else if (/di/i.test(ops[i])){return 5 }
+     else if (/bp/i.test(ops[i])){return 6 }
+     else if (/bx/i.test(ops[i])){return 7 }
+     else{justNumbers=true;return 0b110;}
+    }
   }
 //---------------------------------------------get mod of instruction ------------------------------------------------------    
 
 function getMod(arr){
-  if( arr[0]!=""){
-              var num=0;
-              if(arr.length===2){     //if there's one operand
-              if(/R/.test(arr[1]))//if it's a register
-                  {
-                      return 0b11;
-                  }
-              else if(arr[1]==="M")
-                  {
-                    if(!/\d/.test(arr[0]))
-                    {
-                      return 0;
-                    }else{
-                   num=getNum(arr[0])
-                          if(num===0){return 0;}
-                          else if(num>255){return 0b10;}
-                          else{return 1;}}
-              }}
+    if( arr[0]!=""){
+        var num=0;
+        if(arr.length===2){     //if there's one operand
+        if(/R/.test(arr[1]))//if it's a register
+            {
+             
+                return 0b11;
+            }
+        else if(arr[1]==="M")
+            {
+              if(!/\d/.test(arr[0]))
+              {
+                return 0;
+              }else{
+             num=getNum(arr[0])
+                    if(num===0){return 0;}
+                    else if(num>255){return 0b10;}
+                    else{return 1;}}
+        }}
+        else{
+            if(/R|I/.test(arr[2]) && /R|I/.test(arr[3]) )
+            {
+                return 0b11;}
+            else  {
+                var z=(arr[2]==="M")?0:1;
+                 if(!/\d/.test(arr[z])){ return 0;}
               else{
-                  if(/R/.test(arr[2]) && /R/.test(arr[3]) )
-                  {return 0b11;}
-                  else  {
-                      var z=(arr[2]==="M")?0:1;
-                       if(!/\d/.test(arr[z]))
-                    {
-                      return 0;
-                    }else{
-                      num=getNum(arr[z])
-                              if( num===0){ return 0; }
-                              else if(num>255){ return 0b10; }
-                              else{ return 1; }}
-                                     
-                  }
-              }
-  }
+                num=getNum(arr[z])
+                        if( num===0){ return 0; }
+                        else if(num>255){ return 0b10; }
+                        else{ return 1; }}                            
+            }
+        }
+}
   }
   //convert a string number to number
   function convertP(str)
